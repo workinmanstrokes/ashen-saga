@@ -1,0 +1,55 @@
+[gd_scene load_steps=7 format=3 uid="uid://ashensaga_main"]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_player"]
+[ext_resource type="Script" path="res://scripts/act_director.gd" id="2_director"]
+[ext_resource type="Script" path="res://scripts/boons.gd" id="3_boons"]
+[ext_resource type="Script" path="res://scripts/run_log.gd" id="4_runlog"]
+[ext_resource type="Script" path="res://audio/sound_manager.gd" id="5_sfx"]
+
+[node name="Main" type="Node2D"]
+
+[node name="SoundManager" type="Node" parent="."]
+script = ExtResource("5_sfx")
+
+[node name="RunLog" type="Node" parent="."]
+script = ExtResource("4_runlog")
+
+[node name="Boons" type="Node" parent="."]
+script = ExtResource("3_boons")
+
+[node name="ActDirector" type="Node2D" parent="."]
+script = ExtResource("2_director")
+
+[node name="Player" type="CharacterBody2D" parent="."]
+position = Vector2(640, 360)
+script = ExtResource("1_player")
+
+[node name="Arena" type="Node2D" parent="."]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="HealthBar" type="ProgressBar" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 276.0
+offset_bottom = 36.0
+
+[node name="XPBar" type="ProgressBar" parent="HUD"]
+offset_left = 16.0
+offset_top = 44.0
+offset_right = 276.0
+offset_bottom = 60.0
+
+[node name="TimerLabel" type="Label" parent="HUD"]
+offset_left = 592.0
+offset_top = 12.0
+offset_right = 688.0
+offset_bottom = 36.0
+text = "3:00"
+
+[node name="BossBar" type="ProgressBar" parent="HUD"]
+visible = false
+offset_left = 390.0
+offset_top = 44.0
+offset_right = 890.0
+offset_bottom = 60.0
