@@ -1,11 +1,14 @@
 ; Engine configuration file.
-; Ashen Saga — Viking Age survivors RPG (Godot 4.x, Android-first).
+; Ashen Saga: Sunstone Hunt — Viking Age survivors RPG (Godot 4.x, Android-first).
+; Full title "Ashen Saga: Sunstone Hunt" is the game's identity: several
+; similarly named Ashen RPGs/roguelikes already exist on Android, so the
+; Sunstone Hunt subtitle is what makes this one findable (tester red flag).
 
 config_version=5
 
 [application]
 
-config/name="Ashen Saga"
+config/name="Ashen Saga: Sunstone Hunt"
 config/description="Viking Age survivors RPG: Eirik Ash-Hand hunts the Sunstone across 3 acts."
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "Mobile")

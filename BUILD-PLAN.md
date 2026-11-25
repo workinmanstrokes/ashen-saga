@@ -84,7 +84,43 @@ release model and test on two phones of different sizes.
 - **Stormcaller:** maxed rune nova + chain-lightning boon — clears Act 2 draugr packs
 - **Ashen Berserker:** maxed hammer + rage-on-kill boon — duels the Act 3 boss up close
 - **Skald's Hail:** maxed throwing axes + shard-magnet boon — keeps XP flowing in Act 3
+- **Sunstone Herald:** Stormcaller + Sunstone Herald — the Act 3 boss-killer combo
   (Confirm or replace these after the first difficulty-logged runs.)
+
+## Tester update (2026-11-25, VEX 4.0/10 grade D)
+
+The tester's 17 suggestions are implemented as the smallest real change for
+each; the full status per suggestion is in `README.md`.
+
+- **Android proof first:** `docs/ANDROID-PHONE-TEST.md` is the exact
+  clean-export / install / first-run / Act 1 procedure. The build is NOT
+  yet proven on a real phone — no phone log exists; that step gates the rest.
+- **Difficulty restored:** per-act spawn interval and enemy HP/damage
+  multipliers plus per-act boss HP now live in `scripts/act_director.gd`
+  (Act 1: 2.2 s / ×1.0 / ×1.0 / 600 HP; Act 2: 1.7 s / ×1.35 / ×1.25 /
+  950 HP; Act 3: 1.3 s / ×1.8 / ×1.5 / 1400 HP). There is no easy-mode
+  flag anywhere: the Web preset exports the same tuned build as Android.
+- **Sound:** all five placeholder cues exist in `audio/sound_manager.gd`
+  with per-weapon hit pitch; `player.collect_shard()` is the single shard
+  pickup entry point so the pickup cue plays. The scene now wires the
+  sound manager and run log into the player and director
+  (`scenes/main.tscn`) — before this fix those exports were unset and no
+  SFX or boss logging could ever fire.
+- **Acts distinct + story in-game:** per-act intro saga beats
+  (`act_director.show_intro_beat()`) play before each act; each act has
+  its own enemy mix, arena dressing, boss behaviour, and boss HP.
+- **Build choices widened:** 19 boons (was 12), 4 evolutions (was 3);
+  evolutions are gated on their prerequisite boon in `boons.gd`, and boon
+  effects now actually apply to the player (speed, pickup radius, max HP,
+  damage, Second Wind, shard XP value).
+- **Replay hook:** boss kills bank Sunstone shards and a full 3-act clear
+  unlocks Endless mode (`run_log.gd` meta-progression,
+  `act_director.start_endless()`).
+- **Release model deferred:** `docs/RELEASE-MODEL.md` — sideloaded APK is
+  the test default; Play Store AAB only after the two-phone pass.
+- **Identity:** full title is now **Ashen Saga: Sunstone Hunt** (package
+  `com.workinmanstrokes.ashensaga`), to stand out from the other Ashen
+  RPGs/roguelikes on Android.
 
 ## First step
 

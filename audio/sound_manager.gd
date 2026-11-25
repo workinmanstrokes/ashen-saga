@@ -2,6 +2,10 @@ extends Node
 ## Placeholder SFX player: weapon hit, shard pickup, level-up, boss spawn,
 ## boss death — with a mute toggle. Placeholder effects are enough to test feel;
 ## drop real .wav/.ogg files into res://audio/ and assign them in _ready().
+##
+## Tester update (VEX 4.0/10): weapon hits are now distinguishable — the
+## hammer thuds low, axes cut mid, and the rune nova rings high — so the
+## three auto-weapons give different audio feedback instead of one beep.
 
 const SFX := {
 	"hit": "res://audio/sfx_hit.wav",
@@ -10,6 +14,9 @@ const SFX := {
 	"boss_spawn": "res://audio/sfx_boss_spawn.wav",
 	"boss_death": "res://audio/sfx_boss_death.wav",
 }
+
+# Per-weapon hit pitch: hammer low, axes mid, nova high.
+const HIT_PITCH := {"hammer": 0.8, "axes": 1.0, "nova": 1.25}
 
 var muted: bool = false
 var players: Dictionary = {}
@@ -53,6 +60,9 @@ func set_muted(value: bool) -> void:
 	ProjectSettings.set_setting("ashen_saga/sound_muted", value)
 
 func play_hit(weapon_name: String = "") -> void:
+	var player: AudioStreamPlayer = players.get("hit")
+	if player != null:
+		player.pitch_scale = float(HIT_PITCH.get(weapon_name, 1.0))
 	_play("hit")
 
 func play_pickup() -> void:

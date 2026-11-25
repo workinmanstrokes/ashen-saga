@@ -18,10 +18,20 @@ script = ExtResource("4_runlog")
 script = ExtResource("3_boons")
 
 [node name="ActDirector" type="Node2D" parent="."]
+; Tester fix (2026-11-25): these exports were never assigned in the scene,
+; so sound_manager and run_log were null at runtime — boss SFX and boss-kill
+; logging could never fire even though the scripts existed.
+sound_manager = NodePath("../SoundManager")
+run_log = NodePath("../RunLog")
 script = ExtResource("2_director")
 
 [node name="Player" type="CharacterBody2D" parent="."]
 position = Vector2(640, 360)
+; Tester fix (2026-11-25): same wiring gap as the director — the player
+; never had its sound manager or boon pool, so hit/level-up SFX and boon
+; upgrades silently did nothing.
+sound_manager = NodePath("../SoundManager")
+boons = NodePath("../Boons")
 script = ExtResource("1_player")
 
 [node name="Arena" type="Node2D" parent="."]
