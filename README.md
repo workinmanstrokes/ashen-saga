@@ -24,19 +24,27 @@ and story from the same project as the working web build — no rewrite.
   boons widened to 19 with gated evolutions, per-weapon hit sounds, shard
   pickup sound wired in, act-intro saga beats told in-game, and
   meta-progression (banked Sunstone shards + Endless mode after a full clear).
-- **Still unfinished:** the Godot Android build has NOT yet been proven on a
-  real phone — no install / first-run / Act 1 log exists yet. That proof is
-  step 1 and it gates everything else; see `docs/ANDROID-PHONE-TEST.md` for
-  the exact procedure and `docs/RELEASE-MODEL.md` for the release decision.
-- Game tester score: **4.0/10 (grade D)** (before this update).
+- **Tester re-test (VEX 3.0/10, grade F):** the Android build still has NOT
+  been proven on a real phone — and the repo itself carried the blocker: the
+  Android export preset demanded a signed APK (`package/signed=true`) with
+  no keystore configured anywhere in the repo, so no installable APK could
+  be produced at all. Fixed in this update (`export_presets.cfg` now exports
+  a debug-signed sideload APK, version 0.3.1). The phone proof itself still
+  needs a real phone — see `docs/ANDROID-PHONE-TEST.md` for the exact
+  procedure and `docs/RELEASE-MODEL.md` for the release decision.
+- Game tester score: **3.0/10 (grade F)** (VEX re-test — Android launch
+  failure is the ship-blocker; export/signing fix applied, phone proof
+  still pending).
 
 ## Tester-priority checklist (in order — do not skip ahead)
 
 1. **Fix and prove the Godot Android build first.** Get it opening on one real
    phone, then record install, first run, Act 1 completion and stability.
    Do not tune anything else until this passes. Procedure:
-   `docs/ANDROID-PHONE-TEST.md`. Status: **NOT YET PROVEN — procedure written,
-   no phone log recorded.**
+   `docs/ANDROID-PHONE-TEST.md`. Status: **EXPORT BLOCKER FIXED IN CONFIG,
+   PHONE PROOF STILL PENDING** — the preset demanded a signed APK with no
+   keystore configured; it now exports a debug-signed APK (version 0.3.1).
+   Run the procedure on a real phone next; no phone log recorded yet.
 2. **Restore the intended difficulty** in the playable build and test it as a
    full 3-act run, logging deaths, boss times and level reached per act.
    Set a clear difficulty target rather than shipping the easier web tuning.

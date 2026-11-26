@@ -1,9 +1,18 @@
 # Android phone test — prove the build before tuning anything
 
-Tester priority #1 (VEX 4.0/10): the Godot Android build would not open on a
-phone, so the stated Android target currently has no playable build. Nothing
-else in the tester list is tuned or judged until this procedure passes on one
-real phone. Do the steps in order and record the result in the log at the end.
+Tester priority #1 (VEX 3.0/10, grade F — re-test): the Godot Android build
+would not open on a phone, so the stated Android target currently has no
+playable build. Nothing else in the tester list is tuned or judged until
+this procedure passes on one real phone. Do the steps in order and record
+the result in the log at the end.
+
+> **Signing blocker found and fixed in the repo (this update):** the
+> Android export preset demanded a signed APK (`package/signed=true`) but
+> no keystore was configured anywhere in the repo, so the export could not
+> produce an installable APK at all. `export_presets.cfg` now exports a
+> debug-signed sideload APK (`package/signed=false`, version 0.3.1). If
+> this export still fails, record the exact error — the failure class
+> (export / signing / runtime crash) is what answers open question 1.
 
 ## Prerequisites
 
