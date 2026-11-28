@@ -6,6 +6,13 @@ extends Node
 ## Tester update (VEX 4.0/10): weapon hits are now distinguishable — the
 ## hammer thuds low, axes cut mid, and the rune nova rings high — so the
 ## three auto-weapons give different audio feedback instead of one beep.
+##
+## Tester update (VEX 3.5/10): a simple looping music track — a low drone
+## with a slow A-minor melody, generated in code like the SFX so the Viking
+## atmosphere is testable before real audio lands. start_music() /
+## stop_music() control it; the mute toggle silences music and SFX together.
+## A real res://audio/music_loop.wav (or .ogg) replaces the generated loop
+## automatically when it exists.
 
 const SFX := {
 	"hit": "res://audio/sfx_hit.wav",
@@ -15,11 +22,14 @@ const SFX := {
 	"boss_death": "res://audio/sfx_boss_death.wav",
 }
 
+const MUSIC_PATH := "res://audio/music_loop.wav"
+
 # Per-weapon hit pitch: hammer low, axes mid, nova high.
 const HIT_PITCH := {"hammer": 0.8, "axes": 1.0, "nova": 1.25}
 
 var muted: bool = false
 var players: Dictionary = {}
+var music_player: AudioStreamPlayer
 
 func _ready() -> void:
 	muted = ProjectSettings.get_setting("ashen_saga/sound_muted", false)
@@ -34,6 +44,16 @@ func _ready() -> void:
 		player.bus = "Master"
 		add_child(player)
 		players[key] = player
+	var music_stream: AudioStream = load(MUSIC_PATH) if ResourceLoader.exists(MUSIC_PATH) else null
+	if music_stream == null:
+		music_stream = _make_music_loop()
+	music_player = AudioStreamPlayer.new()
+	music_player.stream = music_stream
+	music_player.bus = "Master"
+	music_player.volume_db = -12.0
+	add_child(music_player)
+	if not muted:
+		start_music()
 
 func _make_tone(key: String) -> AudioStreamWAV:
 	# Short placeholder beep; pitch varies per cue so each is distinguishable.
@@ -55,9 +75,57 @@ func _make_tone(key: String) -> AudioStreamWAV:
 	wav.data = data
 	return wav
 
+func _make_music_loop() -> AudioStreamWAV:
+	# 8-second looping placeholder: a low A drone under a slow A-minor
+	# melody (one note per second), with a short fade at the loop seam so
+	# it repeats without a click. Replace with a real track when one exists.
+	var sample_rate := 22050
+	var length := 8.0
+	var frames := int(sample_rate * length)
+	var notes := [220.0, 261.63, 329.63, 293.66, 220.0, 329.63, 196.0, 246.94]
+	var note_len := frames / notes.size()
+	var data := PackedByteArray()
+	data.resize(frames * 2)
+	for i in frames:
+		var t := float(i) / sample_rate
+		var note_idx := mini(i / note_len, notes.size() - 1)
+		var freq: float = notes[note_idx]
+		var note_t := float(i % note_len) / float(note_len)
+		var envelope := 1.0 - 0.5 * note_t
+		var seam := 1.0
+		if i < 512:
+			seam = float(i) / 512.0
+		elif i >= frames - 512:
+			seam = float(frames - i) / 512.0
+		var value := (sin(TAU * 110.0 * t) * 0.35 + sin(TAU * freq * t) * 0.55 * envelope) * 12000.0 * seam
+		data.encode_s16(i * 2, int(value))
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = sample_rate
+	wav.stereo = false
+	wav.data = data
+	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	wav.loop_begin = 0
+	wav.loop_end = frames
+	return wav
+
 func set_muted(value: bool) -> void:
 	muted = value
 	ProjectSettings.set_setting("ashen_saga/sound_muted", value)
+	if muted:
+		stop_music()
+	else:
+		start_music()
+
+func start_music() -> void:
+	if muted:
+		return
+	if music_player != null and not music_player.playing:
+		music_player.play()
+
+func stop_music() -> void:
+	if music_player != null and music_player.playing:
+		music_player.stop()
 
 func play_hit(weapon_name: String = "") -> void:
 	var player: AudioStreamPlayer = players.get("hit")

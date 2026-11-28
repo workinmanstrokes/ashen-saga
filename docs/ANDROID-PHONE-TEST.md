@@ -1,6 +1,6 @@
 # Android phone test — prove the build before tuning anything
 
-Tester priority #1 (VEX 3.0/10, grade F — re-test): the Godot Android build
+Tester priority #1 (VEX 3.5/10, grade D — re-test): the Godot Android build
 would not open on a phone, so the stated Android target currently has no
 playable build. Nothing else in the tester list is tuned or judged until
 this procedure passes on one real phone. Do the steps in order and record
@@ -62,7 +62,30 @@ Record: install OK / FAIL + the exact error text. The package name is
 Play at least 10 minutes total. Record any crash, freeze, or stutter, and
 an approximate FPS feel (smooth / occasional hitches / constant stutter).
 Check the sound cues: weapon hit, shard pickup, level-up, boss spawn,
-boss death — and that the mute toggle silences them.
+boss death, and the music loop — and that the mute toggle silences them all.
+
+## 6. Full-run video playtest — lock the touch controls first
+
+Record one full run on video before judging difficulty or controls.
+
+**Touch controls are locked for this playtest — do not change them mid-test:**
+drag-to-move (virtual joystick), 12 px drag deadzone so a resting thumb does
+not move Eirik, and 48 px minimum touch targets on every on-screen button
+(boon cards, pause, mute). If a control problem shows up, log it and fix it
+after the video run, then re-record — never retune controls during a run
+that is supposed to prove them.
+
+While watching the recording, note:
+
+- **Thumb reach:** can the thumb reach the joystick area and the pause/mute
+  buttons without shifting grip? Any button under the thumb's rest spot?
+- **Readability:** health, XP, timer, act, and boss bar legible at arm's
+  length on this screen size? Any text cut off or too small?
+- **Frame drops / crashes:** any stutter, freeze, or crash, and at what
+  moment (wave size, boss spawn, level-up screen)?
+- **Boss gate:** the run only counts as proving the bosses gate progress
+  once at least one failed run is logged first — `run_log.boss_gate_proven()`
+  must be true before a full clear is called a pass.
 
 ## Log (copy into the README phone test log)
 
@@ -74,7 +97,10 @@ Install: [ ] OK  [ ] FAIL — notes:
 First run / opens: [ ] OK  [ ] FAIL — notes:
 Act 1 completed: [ ] YES  [ ] NO — where it stopped:
 Stability (crashes / freezes / FPS):
-Sound heard (hit / pickup / level-up / boss spawn / boss death):
+Sound heard (hit / pickup / level-up / boss spawn / boss death / music loop):
+Mute toggle silences all sound: [ ] YES  [ ] NO
+Full-run video recorded: [ ] YES — thumb reach / readability / frame drops:
+Boss gate proven (at least one failed run logged first): [ ] YES  [ ] NO
 Run log: deaths __ | boss times __ | level per act __
 ```
 

@@ -7,6 +7,12 @@ extends Node2D
 ## HP/damage multipliers, so Acts 2–3 are mechanically harder than Act 1,
 ## not just busier. There is no easy-mode flag anywhere in gameplay code:
 ## the Web preset exports the same tuned build as Android.
+##
+## Tester update (VEX 3.5/10): every act now states its boss damage as an
+## explicit number (boss_damage, alongside boss_hp) so the difficulty target
+## can be judged, and each boss gets a spoken intro (boss_intro, shown by
+## show_boss_intro() when the boss spawns) so the Viking story is visible
+## in-run instead of living only in the README.
 
 const ACT_LENGTH_SECONDS := 180.0
 
@@ -18,6 +24,8 @@ const ACTS := {
 		"boss": "Grimnir the Drowned Jarl",
 		"boss_behaviour": "slow sweeping axe arcs, summons 2 shamblers at 50% HP",
 		"boss_hp": 600.0,
+		"boss_damage": 12.0,
+		"boss_intro": "Grimnir the Drowned Jarl rises from the wrecked longhouse, his drowned crew shambling behind him. 'The Sunstone is mine, ash-hand — the sea keeps what it takes.'",
 		"spawn_interval": 2.2,
 		"enemy_hp_mult": 1.0,
 		"enemy_damage_mult": 1.0,
@@ -31,6 +39,8 @@ const ACTS := {
 		"boss": "Skadi's Hound, Fenrir's Pup",
 		"boss_behaviour": "fast lunges with telegraphed pounces, splits into 2 pups at 50% HP",
 		"boss_hp": 950.0,
+		"boss_damage": 16.0,
+		"boss_intro": "Skadi's Hound bursts from the pines — Fenrir's pup, all teeth and winter. It circles Eirik, waiting for the pounce.",
 		"spawn_interval": 1.7,
 		"enemy_hp_mult": 1.35,
 		"enemy_damage_mult": 1.25,
@@ -44,6 +54,8 @@ const ACTS := {
 		"boss": "The Ashen King",
 		"boss_behaviour": "rune-nova shockwaves in rings, summons brutes, enrages below 25% HP",
 		"boss_hp": 1400.0,
+		"boss_damage": 22.0,
+		"boss_intro": "The Ashen King stands, the Sunstone burning in his crown. 'Nine winters I waited for a worthy death, Eirik Ash-Hand. Give me one.'",
 		"spawn_interval": 1.3,
 		"enemy_hp_mult": 1.8,
 		"enemy_damage_mult": 1.5,
@@ -64,6 +76,7 @@ var endless_wave: int = 0
 
 signal act_started(act: int, act_name: String)
 signal boss_spawned(boss_name: String)
+signal boss_intro_shown(text: String)
 signal boss_defeated(boss_name: String, kill_seconds: float)
 signal act_completed(act: int)
 signal saga_beat_shown(text: String)
@@ -114,9 +127,10 @@ func _spawn_boss() -> void:
 	boss_active = true
 	var boss_name: String = ACTS[current_act]["boss"]
 	boss_spawned.emit(boss_name)
+	show_boss_intro()
 	if sound_manager != null and sound_manager.has_method("play_boss_spawn"):
 		sound_manager.play_boss_spawn()
-	print("Ashen Saga: boss spawned — %s (%s, %d HP)" % [boss_name, ACTS[current_act]["boss_behaviour"], int(boss_hp_for(current_act))])
+	print("Ashen Saga: boss spawned — %s (%s, %d HP, %d damage)" % [boss_name, ACTS[current_act]["boss_behaviour"], int(boss_hp_for(current_act)), int(boss_damage_for(current_act))])
 
 func report_boss_defeated(kill_seconds: float) -> void:
 	if not boss_active:
@@ -141,6 +155,13 @@ func show_intro_beat() -> void:
 	var beat: String = ACTS[current_act]["intro_beat"]
 	saga_beat_shown.emit(beat)
 	print("Saga intro (Act %d): %s" % [current_act, beat])
+
+func show_boss_intro() -> void:
+	# Boss intro: the boss is named and speaks when it spawns, so the
+	# Viking story is visible in the boss fight itself.
+	var intro: String = ACTS[current_act]["boss_intro"]
+	boss_intro_shown.emit(intro)
+	print("Boss intro (Act %d): %s" % [current_act, intro])
 
 func enemy_mix_for(act: int) -> Array:
 	return ACTS.get(act, ACTS[1])["enemies"]
@@ -168,6 +189,15 @@ func boss_hp_for(act: int) -> float:
 	if endless_mode:
 		hp *= endless_multiplier()
 	return hp
+
+func boss_damage_for(act: int) -> float:
+	var damage := float(ACTS.get(act, ACTS[1])["boss_damage"])
+	if endless_mode:
+		damage *= endless_multiplier()
+	return damage
+
+func boss_intro_for(act: int) -> String:
+	return String(ACTS.get(act, ACTS[1])["boss_intro"])
 
 func intro_beat_for(act: int) -> String:
 	return String(ACTS.get(act, ACTS[1])["intro_beat"])

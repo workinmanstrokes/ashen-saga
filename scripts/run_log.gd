@@ -8,6 +8,12 @@ extends Node
 ## full-clear record across runs. Clearing all 3 acts unlocks Endless mode
 ## (see act_director.start_endless()), which is the replay hook the tester
 ## flagged as missing.
+##
+## Tester update (VEX 3.5/10): the boss gate — a full 3-act clear only
+## counts as proving the bosses gate progress once at least one failed run
+## has been logged first (boss_gate_proven()). Failed runs are counted in
+## meta ("failed_runs") so the playtest log can show the gate was met
+## instead of the run being cleared on the first try with the easy tuning.
 
 const LOG_PATH := "user://ashen_saga_run_log.json"
 const META_PATH := "user://ashen_saga_meta.json"
@@ -18,16 +24,20 @@ const META_PATH := "user://ashen_saga_meta.json"
 const TARGET_DEATHS_PER_RUN := Vector2i(1, 2)
 const TARGET_BOSS_SECONDS := {1: Vector2(20.0, 30.0), 2: Vector2(30.0, 45.0), 3: Vector2(45.0, 60.0)}
 const TARGET_LEVEL_PER_ACT := {1: 6, 2: 12, 3: 15}
+# Boss gate: at least this many failed runs must be logged before a full
+# clear counts as proof the bosses gate progress.
+const REQUIRED_FAILED_RUNS := 1
 
 var current_run: Dictionary = {}
 var history: Array = []
 # Meta-progression, persisted across runs: shards banked, best act reached,
-# total runs, full 3-act clears, and whether Endless mode is unlocked.
+# total runs, full 3-act clears, failed runs, and whether Endless mode is unlocked.
 var meta: Dictionary = {
 	"shards_banked": 0,
 	"best_act": 0,
 	"total_runs": 0,
 	"full_clears": 0,
+	"failed_runs": 0,
 	"endless_unlocked": false,
 }
 
@@ -84,6 +94,9 @@ func end_run(finished: bool) -> Dictionary:
 		meta["full_clears"] = int(meta["full_clears"]) + 1
 		meta["best_act"] = 3
 		meta["endless_unlocked"] = true
+	if not finished:
+		# A failed run: the boss-gate evidence the tester asked for.
+		meta["failed_runs"] = int(meta.get("failed_runs", 0)) + 1
 	_save_meta()
 	history.append(current_run.duplicate(true))
 	_save_history()
@@ -97,10 +110,20 @@ func endless_unlocked() -> bool:
 func shards_banked() -> int:
 	return int(meta["shards_banked"])
 
+func failed_runs() -> int:
+	return int(meta.get("failed_runs", 0))
+
+func boss_gate_proven() -> bool:
+	# True once at least one failed run is on record: the bosses can only
+	# be said to gate progress if somebody has failed against them first.
+	# Check this in the phone-test log before calling a full clear a pass.
+	return failed_runs() >= REQUIRED_FAILED_RUNS
+
 func meta_summary() -> String:
-	return "shards %d | best act %d | runs %d | full clears %d | endless %s" % [
+	return "shards %d | best act %d | runs %d | full clears %d | failed runs %d | endless %s" % [
 		int(meta["shards_banked"]), int(meta["best_act"]), int(meta["total_runs"]),
-		int(meta["full_clears"]), "unlocked" if bool(meta["endless_unlocked"]) else "locked"]
+		int(meta["full_clears"]), failed_runs(),
+		"unlocked" if bool(meta["endless_unlocked"]) else "locked"]
 
 func summary_text(run: Dictionary) -> String:
 	return "deaths %d | boss times %s | level per act %s | device %s" % [
