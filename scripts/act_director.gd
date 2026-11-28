@@ -13,8 +13,22 @@ extends Node2D
 ## can be judged, and each boss gets a spoken intro (boss_intro, shown by
 ## show_boss_intro() when the boss spawns) so the Viking story is visible
 ## in-run instead of living only in the README.
+##
+## Tester update (VEX 3.5/10, difficulty red flag): the earlier retune was
+## judged easier without rebalancing evidence. Two fixes. (1) Waves now GROW
+## inside each act: spawn_interval_now() eases the act's base interval down
+## to 60% of it over the 3 minutes, so the minute before the boss is the
+## densest — a flat per-act interval is what let the tuning feel easier than
+## intended. The spawn timer must read spawn_interval_now() on every tick,
+## not the base value. (2) The base intervals below are the intended
+## difficulty and are frozen: they may only change once
+## run_log.difficulty_evidence_met() is true — 3 logged full runs inside
+## the difficulty target — so no retune ships without rebalancing evidence.
 
 const ACT_LENGTH_SECONDS := 180.0
+# Within-act spawn ramp: the interval eases from the act base down to this
+# fraction of it by the end of the 3 minutes (see spawn_interval_now()).
+const SPAWN_RAMP_END_MULT := 0.6
 
 const ACTS := {
 	1: {
@@ -171,6 +185,18 @@ func arena_dressing_for(act: int) -> String:
 
 func spawn_interval_for(act: int) -> float:
 	return float(ACTS.get(act, ACTS[1])["spawn_interval"])
+
+func spawn_interval_now() -> float:
+	# Live spawn interval for the running act: the base interval eased down
+	# as the act timer runs out, so waves grow denser toward the boss. The
+	# spawn timer must read this on every tick; spawn_interval_for() is only
+	# the base value at the start of the act. Outside a run (or in endless
+	# mode, which has no timer) it falls back to the base interval.
+	if not run_active or endless_mode:
+		return spawn_interval_for(current_act)
+	var elapsed: float = ACT_LENGTH_SECONDS - maxf(time_left, 0.0)
+	var progress: float = clampf(elapsed / ACT_LENGTH_SECONDS, 0.0, 1.0)
+	return spawn_interval_for(current_act) * lerpf(1.0, SPAWN_RAMP_END_MULT, progress)
 
 func enemy_hp_multiplier_for(act: int) -> float:
 	var mult := float(ACTS.get(act, ACTS[1])["enemy_hp_mult"])

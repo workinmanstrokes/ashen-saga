@@ -14,6 +14,15 @@ extends Node
 ## has been logged first (boss_gate_proven()). Failed runs are counted in
 ## meta ("failed_runs") so the playtest log can show the gate was met
 ## instead of the run being cleared on the first try with the easy tuning.
+##
+## Tester update (VEX 3.5/10, difficulty red flag): the difficulty-evidence
+## gate — the earlier retune was judged easier without rebalancing evidence.
+## A logged run now records whether it met the whole difficulty target
+## (meets_difficulty_target: 1–2 deaths, every boss kill inside its target
+## window, every act level at or above its target), and the tuning in
+## act_director.gd is frozen until difficulty_evidence_met() is true:
+## 3 logged full runs inside the target. No retune ships on a feeling —
+## log runs first, then retune against the evidence.
 
 const LOG_PATH := "user://ashen_saga_run_log.json"
 const META_PATH := "user://ashen_saga_meta.json"
@@ -27,6 +36,9 @@ const TARGET_LEVEL_PER_ACT := {1: 6, 2: 12, 3: 15}
 # Boss gate: at least this many failed runs must be logged before a full
 # clear counts as proof the bosses gate progress.
 const REQUIRED_FAILED_RUNS := 1
+# Difficulty-evidence gate: this many logged full runs inside the difficulty
+# target are required before the tuning in act_director.gd may be retuned.
+const REQUIRED_EVIDENCE_RUNS := 3
 
 var current_run: Dictionary = {}
 var history: Array = []
@@ -88,6 +100,9 @@ func end_run(finished: bool) -> Dictionary:
 	current_run["finished"] = finished
 	current_run["ended_at"] = Time.get_datetime_string_from_system()
 	current_run["within_death_target"] = int(current_run["deaths"]) >= TARGET_DEATHS_PER_RUN.x and int(current_run["deaths"]) <= TARGET_DEATHS_PER_RUN.y
+	current_run["within_boss_targets"] = _boss_times_within_target(current_run)
+	current_run["within_level_targets"] = _levels_within_target(current_run)
+	current_run["meets_difficulty_target"] = bool(current_run["within_death_target"]) and bool(current_run["within_boss_targets"]) and bool(current_run["within_level_targets"])
 	meta["total_runs"] = int(meta["total_runs"]) + 1
 	if finished and int(current_run["boss_times"].size()) >= 3:
 		# Full 3-act clear: unlocks Endless mode (the replay hook).
@@ -100,6 +115,7 @@ func end_run(finished: bool) -> Dictionary:
 	_save_meta()
 	history.append(current_run.duplicate(true))
 	_save_history()
+	print("Ashen Saga: run ended (finished=%s) — meets difficulty target: %s (evidence %d/%d)" % [finished, bool(current_run["meets_difficulty_target"]), evidence_runs(), REQUIRED_EVIDENCE_RUNS])
 	var finished_run: Dictionary = current_run
 	current_run = {}
 	return finished_run
@@ -119,10 +135,65 @@ func boss_gate_proven() -> bool:
 	# Check this in the phone-test log before calling a full clear a pass.
 	return failed_runs() >= REQUIRED_FAILED_RUNS
 
+func run_meets_difficulty_target(run: Dictionary) -> bool:
+	# A logged run counts as rebalancing evidence only if it sits inside the
+	# whole difficulty target: 1–2 deaths, every boss kill inside its target
+	# window, and every act level at or above its target. A stored run that
+	# was already judged keeps its recorded flag.
+	if run.has("meets_difficulty_target"):
+		return bool(run["meets_difficulty_target"])
+	var deaths: int = int(run.get("deaths", 0))
+	if deaths < TARGET_DEATHS_PER_RUN.x or deaths > TARGET_DEATHS_PER_RUN.y:
+		return false
+	return _boss_times_within_target(run) and _levels_within_target(run)
+
+func _boss_times_within_target(run: Dictionary) -> bool:
+	var boss_times: Dictionary = run.get("boss_times", {})
+	if boss_times.is_empty():
+		return false
+	for act_key in boss_times:
+		var act: int = int(act_key)
+		if not TARGET_BOSS_SECONDS.has(act):
+			return false
+		var window: Vector2 = TARGET_BOSS_SECONDS[act]
+		var seconds: float = float(boss_times[act_key].get("seconds", 0.0))
+		if seconds < window.x or seconds > window.y:
+			return false
+	return true
+
+func _levels_within_target(run: Dictionary) -> bool:
+	var levels: Dictionary = run.get("level_per_act", {})
+	if levels.is_empty():
+		return false
+	for act_key in levels:
+		var act: int = int(act_key)
+		if not TARGET_LEVEL_PER_ACT.has(act):
+			return false
+		if int(levels[act_key]) < int(TARGET_LEVEL_PER_ACT[act]):
+			return false
+	return true
+
+func evidence_runs() -> int:
+	# Logged finished full 3-act runs that met the difficulty target — the
+	# rebalancing evidence for the current tuning. A retune with no evidence
+	# behind it is exactly the red flag the tester raised.
+	var count := 0
+	for run in history:
+		if bool(run.get("finished", false)) and int(run.get("boss_times", {}).size()) >= 3 and run_meets_difficulty_target(run):
+			count += 1
+	return count
+
+func difficulty_evidence_met() -> bool:
+	# True once enough logged runs inside the target exist to call the
+	# current difficulty evidence-backed. Until then the tuning in
+	# act_director.gd is frozen: do not retune easier (or harder) on a
+	# feeling — log runs first, then retune against the evidence.
+	return evidence_runs() >= REQUIRED_EVIDENCE_RUNS
+
 func meta_summary() -> String:
-	return "shards %d | best act %d | runs %d | full clears %d | failed runs %d | endless %s" % [
+	return "shards %d | best act %d | runs %d | full clears %d | failed runs %d | difficulty evidence %d/%d | endless %s" % [
 		int(meta["shards_banked"]), int(meta["best_act"]), int(meta["total_runs"]),
-		int(meta["full_clears"]), failed_runs(),
+		int(meta["full_clears"]), failed_runs(), evidence_runs(), REQUIRED_EVIDENCE_RUNS,
 		"unlocked" if bool(meta["endless_unlocked"]) else "locked"]
 
 func summary_text(run: Dictionary) -> String:

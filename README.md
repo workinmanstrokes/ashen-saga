@@ -42,6 +42,16 @@ and story from the same project as the working web build — no rewrite.
   logged first), the full 19-boon pool listed in `docs/BOON-POOL.md`, and
   a full-run video playtest procedure with the touch controls locked
   (`docs/ANDROID-PHONE-TEST.md` section 6).
+- **Tester re-test (VEX 3.5/10, grade D) — difficulty red flag (this update):**
+  the earlier retune was judged easier without rebalancing evidence. Fixed
+  in code, not by retuning on a feeling: waves now grow inside each act
+  (`scripts/act_director.gd` — `spawn_interval_now()` eases the spawn
+  interval to 60% of its base by the end of the 3 minutes, so the minute
+  before the boss is the densest), and the base tuning is frozen until the
+  run log proves it — `scripts/run_log.gd` (`difficulty_evidence_met()`)
+  needs 3 logged full runs inside the difficulty target (1–2 deaths, boss
+  times and levels in their windows) before any retune counts as
+  evidence-backed.
 - Game tester score: **3.5/10 (grade D)** (VEX re-test — Android launch
   failure is the ship-blocker; export/signing fix applied, phone proof
   still pending).
@@ -65,7 +75,12 @@ and story from the same project as the working web build — no rewrite.
    logged before a full clear counts as proof the bosses gate progress.
    **Video playtest procedure added:** record one full run on video (thumb
    reach, readability, frame drops) with the touch controls locked —
-   `docs/ANDROID-PHONE-TEST.md` section 6.
+   `docs/ANDROID-PHONE-TEST.md` section 6. **Difficulty-evidence gate added
+   this update:** `run_log.difficulty_evidence_met()` — 3 logged full runs
+   inside the target are required before the base tuning may be retuned, so
+   no retune ships without rebalancing evidence; waves also grow inside
+   each act now (`act_director.spawn_interval_now()`, interval eases to 60%
+   of base by the end of the act).
 3. **Add minimum viable sound:** weapon hits, shard pickup, level-up, boss
    spawn and boss death. Placeholder effects are enough to test feel.
    Status: **CODE DONE** — `audio/sound_manager.gd` generates all five
@@ -111,6 +126,17 @@ Difficulty is enforced per act in `scripts/act_director.gd`:
 | Act 2 — The Pinewood Dark | 1.7 s | ×1.35 | ×1.25 | 950 | 16 |
 | Act 3 — The Sunstone Hall | 1.3 s | ×1.80 | ×1.50 | 1400 | 22 |
 
+Within each act the spawn interval also eases from its base down to 60% of
+it by the end of the 3 minutes (Act 1: 2.2 s → 1.3 s; Act 2: 1.7 s → 1.0 s;
+Act 3: 1.3 s → 0.8 s), so waves grow denser toward the boss — a flat interval
+is what let the tuning feel easier than intended. The spawn timer reads
+`spawn_interval_now()` on every tick, not the base value.
+
+**Retune rule (difficulty-evidence gate):** the base intervals above are
+frozen until `run_log.difficulty_evidence_met()` is true — 3 logged full
+runs inside the target (1–2 deaths, every boss kill inside its window, every
+act level at or above its target). No retune ships without that evidence.
+
 Log every run with `scripts/run_log.gd` — deaths, boss times, level per act,
 device, and stability notes — and compare against this table before retuning.
 
@@ -147,6 +173,7 @@ Sound heard (hit / pickup / level-up / boss spawn / boss death / music loop):
 Mute toggle silences all sound: [ ] YES  [ ] NO
 Full-run video recorded: [ ] YES — thumb reach / readability / frame drops:
 Boss gate proven (at least one failed run logged first): [ ] YES  [ ] NO
+Difficulty evidence (logged full runs inside target: __ / 3):
 Run log: deaths __ | boss times __ | level per act __
 ```
 
@@ -156,9 +183,9 @@ Run log: deaths __ | boss times __ | level per act __
 - `export_presets.cfg` — Android APK/AAB and Web export presets
 - `scenes/main.tscn` — root scene wiring menu, acts, saga beats, ending
 - `scripts/player.gd` — Eirik: movement, touch controls, auto-attack weapons, HP, XP
-- `scripts/act_director.gd` — per-act timers, enemy mix, arena dressing, boss behaviour, saga beats
+- `scripts/act_director.gd` — per-act timers, enemy mix, arena dressing, boss behaviour, saga beats, within-act spawn ramp
 - `scripts/boons.gd` — boon pool, weapon upgrades/evolutions, and level-up choices
-- `scripts/run_log.gd` — run logging (deaths, boss times, level per act, device) + meta-progression
+- `scripts/run_log.gd` — run logging (deaths, boss times, level per act, device) + meta-progression + difficulty-evidence gate (3 in-target full runs before any retune)
 - `audio/sound_manager.gd` — placeholder SFX player (hits, pickups, level-up, boss cues) with mute + looping music track
 - `docs/ANDROID-PHONE-TEST.md` — clean-export / install / Act 1 phone-proof procedure + video playtest
 - `docs/BOON-POOL.md` — the full 19-boon pool, evolutions, and carry combos
